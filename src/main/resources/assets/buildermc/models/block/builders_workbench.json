@@ -1,0 +1,12 @@
+{
+    "parent": "block/cube",
+    "textures": {
+        "particle": "buildermc:block/builders_workbench_top",
+        "north": "buildermc:block/builders_workbench_front",
+        "south": "buildermc:block/builders_workbench_front",
+        "east": "buildermc:block/builders_workbench_side",
+        "west": "buildermc:block/builders_workbench_side",
+        "up": "buildermc:block/builders_workbench_top",
+        "down": "minecraft:block/oak_planks"
+    }
+}

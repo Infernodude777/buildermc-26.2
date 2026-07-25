@@ -1,0 +1,7 @@
+{
+    "variants": {
+        "": {
+            "model": "buildermc:block/builders_workbench"
+        }
+    }
+}

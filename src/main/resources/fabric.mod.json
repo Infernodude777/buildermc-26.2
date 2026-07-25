@@ -2,16 +2,16 @@
 	"schemaVersion": 1,
 	"id": "buildermc",
 	"version": "${version}",
-	"name": "builderMC",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"name": "BuilderMC",
+	"description": "A construction-themed Minecraft mod adding building tools, measuring tape, and a builder's workbench.",
 	"authors": [
-		"Me!"
+		"infernodude777"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://modrinth.com/mod/buildermc",
+		"sources": "https://github.com/infernodude777/buildermc"
 	},
-	"license": "CC0-1.0",
+	"license": "MIT",
 	"icon": "assets/buildermc/icon.png",
 	"environment": "*",
 	"entrypoints": {

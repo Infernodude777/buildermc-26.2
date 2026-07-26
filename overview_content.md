@@ -1,6 +1,6 @@
 # BuilderMC Project Overview
 
-BuilderMC is an an AI-powered Minecraft structure generator for the Fabric mod loader. It combines a lightweight Fabric mod written in Java with a Python FastAPI backend that can talk to any OpenAI-compatible LLM.
+BuilderMC is an AI-powered Minecraft structure generator for the Fabric mod loader. It combines a lightweight Fabric mod written in Java with a Python FastAPI backend that can talk to any OpenAI-compatible LLM.
 
 ## Architecture
 

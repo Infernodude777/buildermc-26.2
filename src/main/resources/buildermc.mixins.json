@@ -5,6 +5,7 @@
 	"mixins": [
 		"ExampleMixin"
 	],
+	"_comment": "ExampleMixin is a template stub kept for reference; the mod uses no mixins yet.",
 	"injectors": {
 		"defaultRequire": 1
 	},

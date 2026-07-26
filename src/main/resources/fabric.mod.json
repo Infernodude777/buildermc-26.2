@@ -2,16 +2,16 @@
 	"schemaVersion": 1,
 	"id": "buildermc",
 	"version": "${version}",
-	"name": "BuilderMC",
-	"description": "A construction-themed Minecraft mod adding building tools, measuring tape, and a builder's workbench.",
+	"name": "builderMC",
+	"description": "AI-powered Minecraft builder. Generates structures from natural-language prompts via a Python backend.",
 	"authors": [
-		"infernodude777"
+		"builderMC"
 	],
 	"contact": {
-		"homepage": "https://modrinth.com/mod/buildermc",
+		"homepage": "https://fabricmc.net/",
 		"sources": "https://github.com/infernodude777/buildermc"
 	},
-	"license": "MIT",
+	"license": "CC0-1.0",
 	"icon": "assets/buildermc/icon.png",
 	"environment": "*",
 	"entrypoints": {

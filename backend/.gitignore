@@ -1,0 +1,12 @@
+# Environment files (contain API keys — never commit)
+.env
+.env.*
+
+# Python caches
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# Virtual environments
+.venv/
+venv/

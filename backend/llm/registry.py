@@ -1,0 +1,70 @@
+"""Provider registry — maps provider names to concrete LanguageModelProvider instances.
+
+New providers are added in three steps:
+  1. Implement ``LanguageModelProvider`` in a new module.
+  2. Register the provider in ``PROVIDER_REGISTRY`` below.
+  3. Expose the new name via ``BUILDERMC_LLM_PROVIDER``.
+
+The registry is a plain mapping, which keeps the dependency graph explicit and
+makes it trivial to test with a fake provider by passing the factory directly.
+"""
+from __future__ import annotations
+
+from typing import Callable
+
+from config.settings import Settings, settings
+
+from .base import LanguageModelProvider
+from .nvidia_nim_provider import NvidiaNimProvider
+from .stub_provider import StubProvider
+
+
+ProviderFactory = Callable[[], LanguageModelProvider]
+
+
+def _stub_factory() -> LanguageModelProvider:
+    return StubProvider()
+
+
+def _nvidia_factory() -> LanguageModelProvider:
+    if not settings.nvidia_api_key:
+        raise ValueError(
+            "BUILDERMC_NVIDIA_API_KEY is not set. "
+            "Add it to backend/.env or the environment to use the nvidia provider."
+        )
+    return NvidiaNimProvider(
+        api_key=settings.nvidia_api_key,
+        base_url=settings.nvidia_base_url,
+        model=settings.nvidia_model,
+        temperature=settings.llm_temperature,
+        max_tokens=settings.llm_max_tokens,
+    )
+
+
+# Public registry. Keys are the values accepted by BUILDERMC_LLM_PROVIDER.
+PROVIDER_REGISTRY: dict[str, ProviderFactory] = {
+    "stub": _stub_factory,
+    "nvidia": _nvidia_factory,
+}
+
+
+def get_provider(name: str, _settings: Settings | None = None) -> LanguageModelProvider:
+    """Return a provider instance by registered name.
+
+    Args:
+        name: Provider name (e.g. ``stub`` or ``nvidia``).
+        _settings: Optional settings object for dependency injection in tests.
+
+    Raises:
+        ValueError: If the provider name is unknown or the provider cannot be
+            constructed (e.g. missing API key).
+    """
+    name = (name or "stub").strip().lower()
+    factory = PROVIDER_REGISTRY.get(name)
+    if factory is None:
+        available = ", ".join(sorted(PROVIDER_REGISTRY.keys()))
+        raise ValueError(
+            f"Unknown llm_provider {name!r}. Available: {available}. "
+            f"Set BUILDERMC_LLM_PROVIDER in the environment."
+        )
+    return factory()

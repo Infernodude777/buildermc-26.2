@@ -23,6 +23,14 @@ fabricApi {
 dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+
+	// Minecraft 26.1+ is natively unobfuscated — the merged jar already
+	// contains the real (Mojang-style) class names. Do NOT add a `mappings`
+	// line here: Loom rejects `loom.officialMojangMappings()` with
+	// "Cannot use Mojang mappings in a non-obfuscated environment", and Yarn
+	// mappings are no longer published for 26.x. Loom places the unobfuscated
+	// jar on the compile classpath directly.
+
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
@@ -72,8 +80,8 @@ publishing {
 	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
 	repositories {
 		// Add repositories to publish to here.
-		// Notice: This block does NOT have the same function as the block in the top level.
+		// Notice that this block does NOT have the same function as the block in the top level.
 		// The repositories here will be used for publishing your artifact, not for
-		// retrieving dependencies.
+		// retrieving artifacts.
 	}
 }

@@ -1,40 +1,50 @@
 package net.infernodude777.buildermc;
 
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
-import net.infernodude777.buildermc.block.ModBlocks;
-import net.infernodude777.buildermc.item.ModItems;
-import net.minecraft.item.ItemGroups;
-import net.minecraft.util.Identifier;
+
+import net.infernodude777.buildermc.commands.AIBuildCommand;
+import net.infernodude777.buildermc.config.BuilderMCConfig;
+import net.infernodude777.buildermc.config.ModConfigLoader;
+import net.infernodude777.buildermc.network.BackendClient;
+import net.infernodude777.buildermc.service.BuildService;
+import net.infernodude777.buildermc.service.WorldContextCollector;
+
+import net.minecraft.resources.Identifier;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * builderMC mod entrypoint.
+ * <p>
+ * Wires collaborators (config → backend client → context collector → build
+ * service) and registers the {@code /aibuild} command. All collaborators are
+ * constructed once here and injected where needed — no service-locator / global
+ * state, which keeps the mod testable and the dependency graph explicit.
+ */
 public class BuilderMC implements ModInitializer {
+
     public static final String MOD_ID = "buildermc";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     @Override
     public void onInitialize() {
-        LOGGER.info("Initializing BuilderMC - Construction tools for the modern builder!");
+        LOGGER.info("[buildermc] Initializing AI builder mod.");
 
-        // Register items and blocks
-        ModItems.initialize();
-        ModBlocks.initialize();
+        BuilderMCConfig config = ModConfigLoader.load();
+        config.log();
 
-        // Add items to vanilla creative tabs
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> {
-            entries.add(ModItems.BUILDERS_WAND);
-            entries.add(ModItems.MEASURING_TAPE);
-        });
+        BackendClient backendClient = new BackendClient(config);
+        WorldContextCollector contextCollector = new WorldContextCollector(config);
+        BuildService buildService = new BuildService(backendClient, contextCollector);
 
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> {
-            entries.add(ModBlocks.BUILDERS_WORKBENCH);
-        });
+        AIBuildCommand.register(buildService);
 
-        LOGGER.info("BuilderMC initialized successfully!");
+        LOGGER.info("[buildermc] Ready. Use /aibuild <prompt> to generate a structure.");
     }
 
+    /** Builds an {@link Identifier} in this mod's namespace. */
     public static Identifier id(String path) {
-        return Identifier.of(MOD_ID, path);
+        return Identifier.fromNamespaceAndPath(MOD_ID, path);
     }
 }

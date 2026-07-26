@@ -43,3 +43,11 @@ class LanguageModelProvider(ABC):
         self, spec: BuildingSpec, context: WorldContext
     ) -> BlockPlacementList:
         """Stage 3 — turn the spec into concrete block placements."""
+
+    @abstractmethod
+    async def aclose(self) -> None:
+        """Release any resources held by this provider.
+
+        Called by the build service after a per-request provider finishes.
+        Providers that do not hold resources should implement this as a no-op.
+        """

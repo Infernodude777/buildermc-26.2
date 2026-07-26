@@ -2,7 +2,9 @@ package net.infernodude777.buildermc;
 
 import net.fabricmc.api.ModInitializer;
 
-import net.infernodude777.buildermc.commands.AIBuildCommand;
+import net.infernodude777.buildermc.commands.ApiCommand;
+import net.infernodude777.buildermc.commands.BuildCommand;
+import net.infernodude777.buildermc.commands.PlaceCommand;
 import net.infernodude777.buildermc.config.BuilderMCConfig;
 import net.infernodude777.buildermc.config.ModConfigLoader;
 import net.infernodude777.buildermc.network.BackendClient;
@@ -36,11 +38,13 @@ public class BuilderMC implements ModInitializer {
 
         BackendClient backendClient = new BackendClient(config);
         WorldContextCollector contextCollector = new WorldContextCollector(config);
-        BuildService buildService = new BuildService(backendClient, contextCollector);
+        BuildService buildService = new BuildService(backendClient, contextCollector, config);
 
-        AIBuildCommand.register(buildService);
+        BuildCommand.register(buildService);
+        PlaceCommand.register(buildService);
+        ApiCommand.register(config);
 
-        LOGGER.info("[buildermc] Ready. Use /aibuild <prompt> to generate a structure.");
+        LOGGER.info("[buildermc] Ready. Use /build <prompt> to generate a structure, /place to paste it, /api to configure the AI provider.");
     }
 
     /** Builds an {@link Identifier} in this mod's namespace. */

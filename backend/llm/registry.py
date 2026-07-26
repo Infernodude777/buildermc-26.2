@@ -14,8 +14,10 @@ from typing import Callable
 
 from config.settings import Settings, settings
 
+from models.requests import ProviderConfig
+
 from .base import LanguageModelProvider
-from .nvidia_nim_provider import NvidiaNimProvider
+from .nvidia_nim_provider import OpenAiCompatibleProvider
 from .stub_provider import StubProvider
 
 
@@ -32,7 +34,7 @@ def _nvidia_factory() -> LanguageModelProvider:
             "BUILDERMC_NVIDIA_API_KEY is not set. "
             "Add it to backend/.env or the environment to use the nvidia provider."
         )
-    return NvidiaNimProvider(
+    return OpenAiCompatibleProvider(
         api_key=settings.nvidia_api_key,
         base_url=settings.nvidia_base_url,
         model=settings.nvidia_model,
@@ -68,3 +70,26 @@ def get_provider(name: str, _settings: Settings | None = None) -> LanguageModelP
             f"Set BUILDERMC_LLM_PROVIDER in the environment."
         )
     return factory()
+
+
+def create_provider_from_config(config: ProviderConfig) -> LanguageModelProvider:
+    """Create a per-request provider from the mod's /api config.
+
+    This decouples the service layer from provider-specific construction details
+    and keeps runtime provider switching behind a single factory function.
+    Currently only OpenAI-compatible endpoints are supported, but the dispatch
+    is extensible for future providers.
+    """
+    provider = (config.provider or "openai").strip().lower()
+    if provider in ("openai", "nvidia"):
+        # ``nvidia`` is kept as an alias for backward compatibility; the
+        # underlying implementation is OpenAI-compatible and works with any
+        # ``/chat/completions`` endpoint (NVIDIA NIM, OpenAI, Groq, etc.).
+        return OpenAiCompatibleProvider(
+            api_key=config.api_key,
+            base_url=config.base_url,
+            model=config.model_id,
+            temperature=settings.llm_temperature,
+            max_tokens=settings.llm_max_tokens,
+        )
+    raise ValueError(f"Unsupported per-request provider: {config.provider!r}")

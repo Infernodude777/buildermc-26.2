@@ -14,24 +14,24 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Registers the {@code /aibuild <prompt>} command.
+ * Registers the {@code /build <prompt>} command.
  * <p>
  * The command holds no business logic — it validates that the caller is a
  * player and delegates to {@link BuildService}. {@code <prompt>} is a greedy
  * string so the whole rest of the line is captured as the build prompt.
  */
-public final class AIBuildCommand {
+public final class BuildCommand {
 
-    private AIBuildCommand() {
+    private BuildCommand() {
     }
 
     public static void register(BuildService buildService) {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(
-                    Commands.literal("aibuild")
+                    Commands.literal("build")
                             .then(Commands.argument("prompt", StringArgumentType.greedyString())
                                     .executes(context -> execute(buildService, context))));
-            BuilderMC.LOGGER.info("[buildermc] Registered /aibuild command.");
+            BuilderMC.LOGGER.info("[buildermc] Registered /build command.");
         });
     }
 
@@ -39,7 +39,7 @@ public final class AIBuildCommand {
         CommandSourceStack source = context.getSource();
         ServerPlayer player = source.getPlayer();
         if (player == null) {
-            source.sendSuccess(() -> Component.literal("Only players can run /aibuild."), false);
+            source.sendSuccess(() -> Component.literal("Only players can run /build."), false);
             return 0;
         }
         String prompt = StringArgumentType.getString(context, "prompt");

@@ -31,16 +31,24 @@ class GenerationPipeline:
         provider: LanguageModelProvider | None = None,
         intelligent: IntelligentBuilder | None = None,
     ) -> None:
-        # Default to the stub provider so the pipeline is testable offline.
-        self.provider = provider or StubProvider()
+        # provider may be None; it is set per-request in run() so the same
+        # pipeline instance can serve requests with different providers.
+        self.provider = provider
         self.intelligent = intelligent or IntelligentBuilder()
 
     async def run(
-        self, prompt: str, context: WorldContext
+        self,
+        prompt: str,
+        context: WorldContext,
+        provider: LanguageModelProvider | None = None,
     ) -> tuple[BuildingSpec, BlockPlacementList, list[str]]:
+        # Use the provider passed to this call, falling back to the one
+        # supplied at construction time (or the stub provider if neither).
+        active_provider = provider or self.provider or StubProvider()
+
         logger.info("pipeline stage 1: interpret prompt=%r", prompt)
         try:
-            interpretation: Interpretation = await self.provider.interpret(prompt, context)
+            interpretation: Interpretation = await active_provider.interpret(prompt, context)
         except MalformedLLMOutputError:
             raise
         except Exception as e:
@@ -49,7 +57,7 @@ class GenerationPipeline:
 
         logger.info("pipeline stage 2: generate spec")
         try:
-            spec: BuildingSpec = await self.provider.generate_spec(interpretation, context)
+            spec: BuildingSpec = await active_provider.generate_spec(interpretation, context)
         except MalformedLLMOutputError:
             raise
         except Exception as e:
@@ -62,7 +70,7 @@ class GenerationPipeline:
 
         logger.info("pipeline stage 3: generate placements")
         try:
-            placements: BlockPlacementList = await self.provider.generate_placements(spec, context)
+            placements: BlockPlacementList = await active_provider.generate_placements(spec, context)
         except MalformedLLMOutputError:
             raise
         except Exception as e:

@@ -1,6 +1,7 @@
 package net.infernodude777.buildermc.service;
 
 import net.infernodude777.buildermc.BuilderMC;
+import net.infernodude777.buildermc.config.BuilderMCConfig;
 import net.infernodude777.buildermc.models.BuildTask;
 import net.infernodude777.buildermc.models.WorldContext;
 import net.infernodude777.buildermc.network.BackendClient;
@@ -10,7 +11,10 @@ import net.infernodude777.buildermc.util.MessageUtil;
 
 import net.minecraft.server.level.ServerPlayer;
 
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Orchestrates a build request from the mod to the Python backend.
@@ -34,10 +38,18 @@ public class BuildService {
 
     private final BackendClient backendClient;
     private final WorldContextCollector contextCollector;
+    private final BuilderMCConfig config;
+    private final Map<UUID, BackendResponse> lastResponses = new ConcurrentHashMap<>();
 
-    public BuildService(BackendClient backendClient, WorldContextCollector contextCollector) {
+    public BuildService(BackendClient backendClient, WorldContextCollector contextCollector, BuilderMCConfig config) {
         this.backendClient = backendClient;
         this.contextCollector = contextCollector;
+        this.config = config;
+    }
+
+    /** Returns the last successful build response for a player, or null if none. */
+    public BackendResponse getLastResponse(UUID playerId) {
+        return lastResponses.get(playerId);
     }
 
     /** Begins an asynchronous build. Returns immediately; feedback is sent later. */
@@ -61,7 +73,13 @@ public class BuildService {
         }
 
         long seed = player.level().getSeed();
-        BuildTask task = new BuildTask(prompt, seed, context);
+        String provider = config.apiProvider == null || config.apiProvider.isBlank()
+                ? "openai"
+                : config.apiProvider.strip().toLowerCase();
+        BuildTask.ProviderConfig providerConfig = hasApiConfig()
+                ? new BuildTask.ProviderConfig(provider, config.apiBaseUrl, config.apiModelId, config.apiKey)
+                : null;
+        BuildTask task = new BuildTask(prompt, seed, context, providerConfig);
         long startMs = System.currentTimeMillis();
 
         CompletableFuture<BackendResponse> future = backendClient.requestBuild(task);
@@ -89,6 +107,7 @@ public class BuildService {
                 ? response.dimensions[0] + "x" + response.dimensions[1] + "x" + response.dimensions[2]
                 : "?";
         BuilderMC.LOGGER.info("[buildermc] Build succeeded in {} ms: {}", elapsed, response);
+        lastResponses.put(player.getUUID(), response);
         MessageUtil.sendSuccess(player, "Structure generated: " + response.schematic
                 + " (" + dim + ")");
 
@@ -110,5 +129,11 @@ public class BuildService {
             return be;
         }
         return new BackendException(t.getMessage() == null ? "unknown error" : t.getMessage(), t);
+    }
+
+    private boolean hasApiConfig() {
+        return config.apiBaseUrl != null && !config.apiBaseUrl.isBlank()
+                && config.apiModelId != null && !config.apiModelId.isBlank()
+                && config.apiKey != null && !config.apiKey.isBlank();
     }
 }

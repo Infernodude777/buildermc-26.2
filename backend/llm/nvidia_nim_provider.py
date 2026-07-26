@@ -1,8 +1,8 @@
-"""NVIDIA NIM LLM provider — real AI generation via glm-5.2.
+"""OpenAI-compatible LLM provider.
 
-Uses the OpenAI-compatible ``/chat/completions`` endpoint on NVIDIA NIM
-(``integrate.api.nvidia.com``).  Requires ``BUILDERMC_NVIDIA_API_KEY`` in the
-environment or ``backend/.env``.
+Works with any OpenAI-compatible ``/chat/completions`` endpoint, including
+NVIDIA NIM, OpenAI, Groq, and self-hosted servers.  Requires an API key to be
+supplied at construction time (from the request, env, or .env).
 
 All three pipeline stages call the LLM with a JSON-schema-constrained system
 prompt and validate the response against the Pydantic models in
@@ -30,7 +30,7 @@ from .base import LanguageModelProvider, MalformedLLMOutputError
 
 _T = TypeVar("_T", bound=BaseModel)
 
-logger = logging.getLogger("buildermc.llm.nvidia")
+logger = logging.getLogger("buildermc.llm.openai")
 
 # ─── Stage-specific system prompts ───────────────────────────────────────────
 # Each prompt tells the LLM the EXACT JSON schema so the output validates
@@ -133,8 +133,8 @@ Do NOT write Python code or any other code — output ONLY JSON.
 """
 
 
-class NvidiaNimProvider(LanguageModelProvider):
-    """Real LLM provider via NVIDIA NIM's OpenAI-compatible chat API."""
+class OpenAiCompatibleProvider(LanguageModelProvider):
+    """Real LLM provider via any OpenAI-compatible chat API."""
 
     def __init__(
         self,
@@ -147,8 +147,8 @@ class NvidiaNimProvider(LanguageModelProvider):
     ) -> None:
         if not api_key:
             raise ValueError(
-                "NvidiaNimProvider requires an API key.  "
-                "Set BUILDERMC_NVIDIA_API_KEY in the environment or backend/.env."
+                "OpenAiCompatibleProvider requires an API key. "
+                "Pass one at construction time or in provider_config."
             )
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
@@ -165,7 +165,7 @@ class NvidiaNimProvider(LanguageModelProvider):
             timeout=timeout,
         )
         logger.info(
-            "NvidiaNimProvider initialised: base_url=%s model=%s temp=%.1f max_tokens=%d",
+            "OpenAiCompatibleProvider initialised: base_url=%s model=%s temp=%.1f max_tokens=%d",
             self.base_url, self.model, self.temperature, self.max_tokens,
         )
 
@@ -244,17 +244,17 @@ class NvidiaNimProvider(LanguageModelProvider):
             resp.raise_for_status()
         except httpx.HTTPStatusError as e:
             raise MalformedLLMOutputError(
-                f"NVIDIA NIM HTTP {e.response.status_code}: {e.response.text[:500]}"
+                f"OpenAI-compatible provider HTTP {e.response.status_code}: {e.response.text[:500]}"
             ) from e
         except httpx.RequestError as e:
-            raise MalformedLLMOutputError(f"NVIDIA NIM request error: {e}") from e
+            raise MalformedLLMOutputError(f"OpenAI-compatible provider request error: {e}") from e
 
         payload = resp.json()
         try:
             return payload["choices"][0]["message"]["content"]
         except (KeyError, IndexError) as e:
             raise MalformedLLMOutputError(
-                f"Unexpected NVIDIA NIM response structure: {json.dumps(payload)[:500]}"
+                f"Unexpected OpenAI-compatible response structure: {json.dumps(payload)[:500]}"
             ) from e
 
     async def _chat_json(
@@ -362,3 +362,7 @@ class NvidiaNimProvider(LanguageModelProvider):
             f"pos={context.player_position}",
         ]
         return ", ".join(parts)
+
+
+# Backward-compatible alias for code/config that references the old NVIDIA name.
+NvidiaNimProvider = OpenAiCompatibleProvider

@@ -23,11 +23,27 @@ public class BuilderMCConfig {
     /** How many times to retry a failed backend request before giving up. */
     public int maxRetries = 2;
 
+    /** Optional AI provider API base URL (e.g. https://api.openai.com/v1). */
+    public String apiBaseUrl = "";
+
+    /** Model identifier used on the optional AI provider. */
+    public String apiModelId = "";
+
+    /** API key for the optional AI provider (stored locally; never logged fully). */
+    public String apiKey = "";
+
+    /** Provider type (e.g. "openai", "nvidia"). Defaults to openai-compatible endpoints. */
+    public String apiProvider = "openai";
+
     /** Logs the effective configuration at INFO level. */
     public void log() {
         net.infernodude777.buildermc.BuilderMC.LOGGER.info(
                 "[buildermc] config  | backend={}  connectTimeout={}s  requestTimeout={}s  radius={}  retries={}",
                 backendUrl, connectTimeoutSeconds, requestTimeoutSeconds,
                 buildRadius, maxRetries);
+        boolean hasApi = apiBaseUrl != null && !apiBaseUrl.isBlank();
+        net.infernodude777.buildermc.BuilderMC.LOGGER.info(
+                "[buildermc] config  | api configured={}  model={}",
+                hasApi, apiModelId);
     }
 }

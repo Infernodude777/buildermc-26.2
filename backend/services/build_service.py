@@ -19,6 +19,7 @@ from generator.demo_generator import generate_demo_structure
 from generator.schematic_writer import SchematicWriter
 from intelligent.builder import IntelligentBuilder
 from llm.pipeline import GenerationPipeline
+from llm.registry import create_provider_from_config
 from models.requests import BuildRequest
 from models.responses import BlockPlacementEntry, BuildResponse
 
@@ -40,9 +41,14 @@ class BuildService:
 
     async def build(self, request: BuildRequest, use_demo: bool = False) -> BuildResponse:
         logger.info(
-            "build start: prompt=%r seed=%d demo=%s context=%s",
+            "build start: prompt=%r seed=%d demo=%s context=%s provider_override=%s",
             request.prompt, request.seed, use_demo, request.world_context.biome,
+            bool(request.provider_config),
         )
+
+        # Per-request providers are instantiated from the mod's /api config.
+        # They are closed in the finally block to avoid leaking httpx sessions.
+        per_request_provider = None
         try:
             if use_demo:
                 logger.info("using demo generator (no LLM)")
@@ -50,8 +56,15 @@ class BuildService:
                 # Apply the same intelligent adaptation to the demo path.
                 spec, decisions = self.intelligent.adapt(spec, request.world_context)
             else:
+                if request.provider_config is not None:
+                    per_request_provider = create_provider_from_config(request.provider_config)
+                    logger.info(
+                        "using per-request provider: base_url=%s model=%s",
+                        request.provider_config.base_url, request.provider_config.model_id,
+                    )
+
                 spec, placements, decisions = await self.pipeline.run(
-                    request.prompt, request.world_context
+                    request.prompt, request.world_context, provider=per_request_provider
                 )
 
             # Apply any world-context-driven horizontal offset (clearance / tree
@@ -83,3 +96,9 @@ class BuildService:
         except Exception as e:
             logger.exception("build failed")
             return BuildResponse.failure(f"{type(e).__name__}: {e}")
+        finally:
+            if per_request_provider is not None:
+                try:
+                    await per_request_provider.aclose()
+                except Exception:
+                    logger.exception("failed to close per-request provider")
